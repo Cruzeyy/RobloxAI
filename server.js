@@ -5,7 +5,7 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(bodyParser.json());
 
-// Your OpenAI API key
+// OpenAI API key from Railway
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
 // Shared secret for Roblox
@@ -16,31 +16,19 @@ if (!OPENAI_KEY) {
   process.exit(1);
 }
 
-// Root endpoint to check server
-app.get("/", (req, res) => {
-  res.send("Server is running!");
-});
+// Root endpoint to test server
+app.get("/", (req, res) => res.send("Server is running!"));
 
-// Correct /llm endpoint
+// ✅ Proper /llm endpoint
 app.post("/llm", async (req, res) => {
   try {
-    const header = req.headers["x-internal-token"];
-    if (!header || header !== SHARED_SECRET) {
+    const token = req.headers["x-internal-token"];
+    if (!token || token !== SHARED_SECRET) {
       return res.status(401).json({ text: "unauthorized" });
     }
 
     const { username, prompt } = req.body || {};
     if (!prompt) return res.status(400).json({ text: "no prompt" });
-
-    const body = {
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a friendly Roblox AI helper. Keep answers short and family-friendly." },
-        { role: "user", content: `Player ${username} asks: ${prompt}` }
-      ],
-      max_tokens: 400,
-      temperature: 0.6
-    };
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -48,7 +36,15 @@ app.post("/llm", async (req, res) => {
         "Authorization": `Bearer ${OPENAI_KEY}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a friendly Roblox AI helper. Keep answers short and family-friendly." },
+          { role: "user", content: `Player ${username} asks: ${prompt}` }
+        ],
+        max_tokens: 400,
+        temperature: 0.6
+      })
     });
 
     const data = await response.json();
