@@ -5,9 +5,8 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(bodyParser.json());
 
-// grab your secret keys from Railway
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const SHARED_SECRET = process.env.RAILWAY_SHARED_SECRET;
+const SHARED_SECRET = "abc123supersecret!!"; // fixed to match Roblox
 
 if (!OPENAI_KEY) {
   console.error("Missing OPENAI_API_KEY environment variable");
@@ -16,16 +15,16 @@ if (!OPENAI_KEY) {
 
 app.get("/", (req, res) => res.send("Server is running!"));
 
-// this is the endpoint Roblox will call
+// Roblox will call this
 app.post("/llm", async (req, res) => {
   try {
-    // check secret header to make sure it’s from Roblox
+    // check secret header
     const header = req.headers["x-internal-token"];
     if (!header || header !== SHARED_SECRET) {
       return res.status(401).json({ text: "unauthorized" });
     }
 
-    const { userId, username, prompt } = req.body || {};
+    const { username, prompt } = req.body || {};
     if (!prompt) return res.status(400).json({ text: "no prompt" });
 
     const systemMessage = `You are a friendly Roblox AI helper. Keep answers short (under 150 words). Family-friendly only.`;
