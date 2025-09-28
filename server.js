@@ -5,20 +5,25 @@ const bodyParser = require("body-parser");
 const app = express();
 app.use(bodyParser.json());
 
+// Your OpenAI API key
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const SHARED_SECRET = "abc123supersecret!!"; // fixed to match Roblox
+
+// Shared secret for Roblox
+const SHARED_SECRET = "abc123supersecret!!";
 
 if (!OPENAI_KEY) {
   console.error("Missing OPENAI_API_KEY environment variable");
   process.exit(1);
 }
 
-app.get("/", (req, res) => res.send("Server is running!"));
+// Root endpoint to check server
+app.get("/", (req, res) => {
+  res.send("Server is running!");
+});
 
-// Roblox will call this
+// Correct /llm endpoint
 app.post("/llm", async (req, res) => {
   try {
-    // check secret header
     const header = req.headers["x-internal-token"];
     if (!header || header !== SHARED_SECRET) {
       return res.status(401).json({ text: "unauthorized" });
@@ -27,12 +32,10 @@ app.post("/llm", async (req, res) => {
     const { username, prompt } = req.body || {};
     if (!prompt) return res.status(400).json({ text: "no prompt" });
 
-    const systemMessage = `You are a friendly Roblox AI helper. Keep answers short (under 150 words). Family-friendly only.`;
-
     const body = {
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemMessage },
+        { role: "system", content: "You are a friendly Roblox AI helper. Keep answers short and family-friendly." },
         { role: "user", content: `Player ${username} asks: ${prompt}` }
       ],
       max_tokens: 400,
@@ -52,6 +55,7 @@ app.post("/llm", async (req, res) => {
     const text = data?.choices?.[0]?.message?.content?.trim() || "Sorry, I couldn’t find an answer.";
 
     res.json({ text });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ text: "server error" });
